@@ -31,7 +31,7 @@ def get_browse_wandrer_data_boundaries_folder():
     # logging.info('Getting boundaries folder...')
     # root_folder = get_browse_wandrer_data_root_folder()
     # boundaries_folder_path = os.path.join(root_folder, 'Lib', 'data', 'boundaries')
-    boundaries_folder_path = os.path.join(ss.base_dir,'..','geojson')
+    boundaries_folder_path = os.path.join(ss.base_dir,'..','data','geojson')
     logging.info(f'{ss.base_dir=}')
 
     return boundaries_folder_path
