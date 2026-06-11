@@ -3,6 +3,7 @@ from functools import wraps
 import json
 import logging
 import os
+from pathlib import Path
 import plotly.graph_objects as go
 import streamlit as st
 from streamlit import session_state as ss
@@ -27,16 +28,19 @@ def get_browse_wandrer_data_root_folder():
 # @timeit
 @st.cache_data
 def get_browse_wandrer_data_boundaries_folder():
-    logging.info('Getting boundaries folder...')
-    root_folder = get_browse_wandrer_data_root_folder()
-    boundaries_folder_path = os.path.join(root_folder, 'Lib', 'data', 'boundaries')
+    # logging.info('Getting boundaries folder...')
+    # root_folder = get_browse_wandrer_data_root_folder()
+    # boundaries_folder_path = os.path.join(root_folder, 'Lib', 'data', 'boundaries')
+    boundaries_folder_path = os.path.join(ss.base_dir,'..','geojson')
+    logging.info(f'{ss.base_dir=}')
+
     return boundaries_folder_path
 
 
 @timeit
 @st.cache_data(ttl=300, max_entries=10, show_spinner="Adding town trace...")
 def add_town_trace(fig, combined_features):
-    logging.info('Running add_town_trace...')
+    # logging.info('Running add_town_trace...')
     geojson = {"type": "FeatureCollection", "features": combined_features}
     fig.add_trace(go.Choroplethmap(
         geojson=geojson,
@@ -69,7 +73,7 @@ def add_empty_town_trace(fig):
 @st.cache_data(ttl=300, max_entries=10, show_spinner="Parsing state shapes from disk...")
 def load_state_geojson(state_code: str):
     """Loads a single state file and caches it globally in memory across all users."""
-    logging.info(f'Running load_state_geojson for {state_code} from disk...')
+    # logging.info(f'Running load_state_geojson for {state_code} from disk...')
     fq_boundaries_folder = get_browse_wandrer_data_boundaries_folder()
     row_filename = f"{state_code.replace(' ','-')}_locations.geojson"
     fq_filename = os.path.join(fq_boundaries_folder, row_filename)
@@ -96,13 +100,16 @@ def load_state_geojson(state_code: str):
 @timeit
 @st.cache_data(ttl=300, max_entries=10, show_spinner="Showing figure...")
 def show_chart(fig):
-    logging.info('Running show_chart...')
+    # logging.info('Running show_chart...')
     st.plotly_chart(fig, width='stretch', height=750)
 
 
 ## main logic
 
 logging.basicConfig(level=logging.INFO)
+
+ss.base_dir = Path(__file__).resolve().parent
+logging.info(f'{ss.base_dir=}')
 
 # 1. Page Configuration
 st.set_page_config(page_title="Regional Town Mapper", layout="wide")
