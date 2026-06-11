@@ -1,6 +1,7 @@
 # from ..my_decorators import my_timeit
 from functools import wraps
 import json
+import logging
 import os
 import plotly.graph_objects as go
 import streamlit as st
@@ -15,7 +16,7 @@ def timeit(func):
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
         total_time = end_time - start_time
-        print(f'TIMEIT: {func.__name__} took {total_time:.4f} seconds')
+        logging.info(f'{func.__name__} took {total_time:.4f} seconds')
         return result
     return timeit_wrapper
 
@@ -26,7 +27,7 @@ def get_browse_wandrer_data_root_folder():
 # @timeit
 @st.cache_data
 def get_browse_wandrer_data_boundaries_folder():
-    print('Getting boundaries folder...')
+    logging.info('Getting boundaries folder...')
     root_folder = get_browse_wandrer_data_root_folder()
     boundaries_folder_path = os.path.join(root_folder, 'Lib', 'data', 'boundaries')
     return boundaries_folder_path
@@ -35,7 +36,7 @@ def get_browse_wandrer_data_boundaries_folder():
 @timeit
 @st.cache_data(ttl=300, max_entries=10, show_spinner="Adding town trace...")
 def add_town_trace(fig, combined_features):
-    print('Running add_town_trace...')
+    logging.info('Running add_town_trace...')
     geojson = {"type": "FeatureCollection", "features": combined_features}
     fig.add_trace(go.Choroplethmap(
         geojson=geojson,
@@ -68,14 +69,14 @@ def add_empty_town_trace(fig):
 @st.cache_data(ttl=300, max_entries=10, show_spinner="Parsing state shapes from disk...")
 def load_state_geojson(state_code: str):
     """Loads a single state file and caches it globally in memory across all users."""
-    print(f'Running load_state_geojson for {state_code} from disk...')
+    logging.info(f'Running load_state_geojson for {state_code} from disk...')
     fq_boundaries_folder = get_browse_wandrer_data_boundaries_folder()
     row_filename = f"{state_code.replace(' ','-')}_locations.geojson"
     fq_filename = os.path.join(fq_boundaries_folder, row_filename)
     file_path = fq_filename.replace(' ','-')
 
     if not os.path.exists(file_path):
-        print(f'File path not found: {file_path}')
+        logging.info(f'File path not found: {file_path}')
         return None
 
     with open(file_path, "r") as f:
@@ -88,18 +89,20 @@ def load_state_geojson(state_code: str):
     # Generate mock metric for demo; map this to your actual dataframe data
     metrics = [len(loc) * 12 for loc in locations]
 
-    print(f'Loaded {len(features)} features for {state_code}')
+    logging.info(f'Loaded {len(features)} features for {state_code}')
 
     return {"features": features, "locations": locations, "z": metrics}
 
 @timeit
 @st.cache_data(ttl=300, max_entries=10, show_spinner="Showing figure...")
 def show_chart(fig):
-    print('Running show_chart...')
+    logging.info('Running show_chart...')
     st.plotly_chart(fig, width='stretch', height=750)
 
 
 ## main logic
+
+logging.basicConfig(level=logging.INFO)
 
 # 1. Page Configuration
 st.set_page_config(page_title="Regional Town Mapper", layout="wide")
@@ -166,7 +169,7 @@ fig.update_layout(
 # 6. Render the Map Window
 # st.plotly_chart(fig, use_container_width=True, height=750)
 show_chart(fig)
-print('')
+logging.info('')
 
 # Optional Status Monitor to ensure Streamlit remains healthy
 st.caption(f"Currently monitoring {len(combined_locations):,} town polygons in real-time.")
