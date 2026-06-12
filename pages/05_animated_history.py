@@ -1,4 +1,5 @@
 import streamlit as st
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import json
@@ -6,7 +7,7 @@ import os
 import datetime
 import numpy as np
 
-st.set_page_config(page_title="Rider Timeline Tracker", layout="wide")
+st.set_page_config(page_title="Animated History", layout="wide")
 st.title("🚴 Rider Progress Timeline & Map Animation")
 
 # --- DATABASE PERSISTENCE LAYER ---
@@ -133,22 +134,93 @@ def get_mock_geojson():
     ]}
 
 
+geojson = get_mock_geojson()
+
 fig = go.Figure()
-fig.add_trace(go.Choroplethmap(
-    geojson=get_mock_geojson(),
+fig_data = go.Choroplethmap(
+    geojson=geojson,
     locations=historical_totals["geo_key"],
     z=historical_totals["miles_added"],
     colorscale="Viridis",
     zmin=0, zmax=50,  # Keep color scale fixed during history changes so colors match values accurately
     marker_opacity=0.6,
     name="Miles Covered"
-))
+)
 
 zoom = 8
-fig.update_layout(
+fig_layout = go.Layout(
     map=dict(style="carto-positron", center=dict(lat=42.36, lon=-71.06), zoom=zoom),
     margin=dict(l=0, r=0, t=0, b=0)
 )
+
+fig_layout["updatemenus"] = [dict(type="buttons",
+                                  buttons=[dict(label="Play",
+                                                method="animate",
+                                                args=[None,
+                                                      dict(frame=dict(duration=1000,
+                                                                      redraw=True),
+                                                           fromcurrent=True)]),
+                                           dict(label="Pause",
+                                                method="animate",
+                                                args=[[None],
+                                                      dict(frame=dict(duration=0,
+                                                                      redraw=True),
+                                                           mode="immediate")])],
+                                  direction="left",
+                                  pad={"r": 10, "t": 35},
+                                  showactive=False,
+                                  x=0.1,
+                                  xanchor="right",
+                                  y=0,
+                                  yanchor="top")]
+
+days = np.sort(filtered_ledger['sync_date'].unique())
+
+# sliders_dict = dict(active=len(days) - 1,
+sliders_dict = dict(active=len(month_labels) - 1,
+                    visible=True,
+                    yanchor="top",
+                    xanchor="left",
+                    currentvalue=dict(font=dict(size=20),
+                                      prefix="Date: ",
+                                      visible=True,
+                                      xanchor="right"),
+                    pad=dict(b=10,
+                             t=10),
+                    len=0.875,
+                    x=0.125,
+                    y=0,
+                    steps=[])
+
+fig_frames = []
+for day in days:
+    # day_as_string = np.datetime_as_string(day, unit='D')
+    day_as_string = str(day).split('T')[0]
+    last_index = day_as_string.rfind('-')
+    year_month = day_as_string[:last_index]
+    plot_df = filtered_ledger[filtered_ledger['sync_date'] == day]
+    frame = go.Frame(data=[go.Choroplethmap(geojson=geojson,
+                                               z=historical_totals["miles_added"],
+                                               customdata=historical_totals["miles_added"],
+                                               name="",
+                                               text=historical_totals["geo_key"],
+                                               hovertemplate="%{text}<br>%{customdata}")],
+                     name=year_month)
+    fig_frames.append(frame)
+
+    slider_step = dict(args=[[day_as_string],
+                             dict(mode="immediate",
+                                  frame=dict(duration=300,
+                                             redraw=True))],
+                       method="animate",
+                       label=year_month)
+    sliders_dict["steps"].append(slider_step)
+
+# fig=go.Figure(data=fig_data, layout=fig_layout)
+fig_layout.update(sliders=[sliders_dict])
+
+fig=go.Figure(data=fig_data, layout=fig_layout, frames=fig_frames)
+
 
 st.plotly_chart(fig, width='stretch')
 
