@@ -1,5 +1,9 @@
 import plotly.graph_objects as go
 import pandas as pd
+import streamlit as st
+
+st.set_page_config(page_title="Animated History", layout="wide")
+st.title("🚴 go.Choropleth Animation")
 
 # 1. Create Mock Time-Series Data
 # data = {
@@ -105,12 +109,13 @@ sliders = [
 
 # 7. Finalize Map Layout Assembly
 layout = go.Layout(
-    title=dict(text="Time-Series State Analysis via go.Choropleth", x=0.5),
+    # title=dict(text="Time-Series State Analysis via go.Choropleth", x=0.5),
     geo=dict(scope="usa", projection=dict(type="albers usa")),
     updatemenus=updatemenus,
-    sliders=sliders
+    sliders=sliders,
+    margin=dict(l=0, r=0, t=0, b=0)
 )
 
 # Assemble Figure
 fig = go.Figure(data=[initial_trace], layout=layout, frames=frames)
-fig.show()
+st.plotly_chart(fig, width='stretch')
